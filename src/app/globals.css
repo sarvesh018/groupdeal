@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Design tokens. The whole product is themed from this block.
+   Near-black surfaces, one accent (warm orange), green only for
+   money saved and success, red only for errors.
+------------------------------------------------------------------- */
+@theme {
+  --color-ink: #090a0d;        /* main background */
+  --color-panel: #101217;      /* secondary background */
+  --color-raised: #171a21;     /* elevated surfaces */
+  --color-line: rgb(255 255 255 / 0.1);
+  --color-line-strong: rgb(255 255 255 / 0.22);
+  --color-text: #f5f5f5;
+  --color-dim: #a2a6b0;
+  --color-faint: #747985;
+  --color-accent: #ff6a1f;
+  --color-accent-soft: #ff8a4c;
+  --color-mint: #4ade9a;
+  --color-rose: #ff7389;
+  --color-chart: #c9ccd4;
+  --color-paper: #f2f1ed;      /* the one light surface */
+
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.875rem;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-seat: seat-in 0.6s var(--ease-out-expo) both;
+  --animate-rise: rise 0.6s var(--ease-out-expo) both;
+  --animate-grow: grow 0.9s var(--ease-out-expo) both;
+  --animate-beacon: beacon 2s ease-in-out infinite;
+
+  @keyframes seat-in {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes rise {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes beacon {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(255 106 31 / 0.5); }
+    50% { box-shadow: 0 0 0 7px rgb(255 106 31 / 0); }
+  }
+}
+
+/* Chart colours, checked for colour-blind separation and contrast on --color-panel.
+   series-*: categories in this fixed order. seq-*: one hue, for ordered stages and heat maps. */
+:root {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #9085e9;
+  --series-none: #5b606c;
+  --seq-1: #9ec5f4;
+  --seq-2: #6da7ec;
+  --seq-3: #3987e5;
+  --seq-4: #256abf;
+  --seq-5: #184f95;
+  --bar-quiet: #8a8f9b;
+}
+
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+html {
+  color-scheme: dark;
+  background: var(--color-ink);
+}
+
+/* Lenis smooth scrolling */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+body {
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background: var(--color-ink);
+  overflow-x: clip;
+}
+
+/* Depth without decoration: one soft light from the top-right, and film grain. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  background:
+    radial-gradient(1100px 620px at 88% -12%, rgb(255 106 31 / 0.09), transparent 62%),
+    radial-gradient(900px 600px at -12% 108%, rgb(255 255 255 / 0.035), transparent 60%);
+}
+body::after {
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  font-weight: 500;
+}
+
+::selection {
+  background: rgb(255 106 31 / 0.4);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-[84rem] px-5 sm:px-8 lg:px-12;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold tracking-[-0.01em] transition duration-200 select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97];
+  }
+  .btn-primary {
+    @apply bg-accent text-ink hover:bg-accent-soft;
+  }
+  .btn-quiet {
+    @apply border border-line-strong text-text hover:border-text hover:bg-text hover:text-ink;
+  }
+  .btn-danger {
+    @apply border border-rose/40 text-rose hover:bg-rose/10;
+  }
+  .btn-sm {
+    @apply px-4 py-2 text-[13px];
+  }
+  .btn-lg {
+    @apply px-7 py-4 text-base;
+  }
+  .card {
+    @apply rounded-(--radius-card) border border-line bg-panel;
+  }
+  .field {
+    @apply block w-full rounded-[0.625rem] border border-line bg-raised/60 px-3.5 py-2.5 text-sm text-text placeholder:text-faint transition duration-200 hover:border-line-strong focus:border-accent focus:bg-raised focus:outline-none;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-dim;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-4 py-1.5 text-sm text-dim transition duration-200 cursor-pointer hover:border-line-strong hover:text-text;
+  }
+  .chip-on {
+    @apply border-text bg-text text-ink hover:border-text hover:text-ink;
+  }
+  .rule {
+    @apply border-t border-line;
+  }
+  .table-wrap {
+    @apply overflow-x-auto rounded-(--radius-card) border border-line bg-panel;
+  }
+  .table-wrap table {
+    @apply w-full text-left text-sm;
+  }
+  .table-wrap th {
+    @apply whitespace-nowrap border-b border-line px-4 py-3 text-xs font-medium text-faint;
+  }
+  .table-wrap td {
+    @apply border-b border-line px-4 py-3 align-middle;
+  }
+  .table-wrap tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table-wrap tbody tr {
+    @apply transition-colors hover:bg-raised/60;
+  }
+}
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23a2a6b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+input[type="range"] {
+  accent-color: var(--color-accent);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
