@@ -39,9 +39,7 @@ export function publicName(name: string) {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-export function referralCode(groupId: number, membershipId: number) {
-  return `TL-${String(groupId).padStart(3, "0")}-${String(membershipId).padStart(4, "0")}`;
-}
+export { referralCode } from "./rules";
 
 export function nextMonths(count = 6) {
   const out: string[] = [];

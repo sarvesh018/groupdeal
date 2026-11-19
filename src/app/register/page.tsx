@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, homeFor } from "@/lib/session";
 import { listCities } from "@/lib/queries";
 import { RegisterForm } from "@/components/auth-forms";
 import { AuthShell } from "@/components/auth-shell";
@@ -9,7 +9,8 @@ export const metadata = { title: "Create account" };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
-  if (await getCurrentUser()) redirect("/dashboard");
+  const signedIn = await getCurrentUser();
+  if (signedIn) redirect(homeFor(signedIn.role));
   const cities = await listCities();
   return (
     <AuthShell title="Take your seat." lead="Free to join. Joining a group never commits you to buy.">

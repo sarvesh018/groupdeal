@@ -99,7 +99,9 @@ const round = (n: number, to: number) => Math.round(n / to) * to;
 
 export async function resetDatabase() {
   const db = await getDb();
-  await db.execute(sql`TRUNCATE quotes, memberships, groups, users, showrooms, models, brands, cities RESTART IDENTITY CASCADE`);
+  await db.execute(
+    sql`TRUNCATE notifications, disputes, fees, statements, fee_bands, booking_proofs, referral_events, referrals, quote_colours, quote_lines, invitations, showroom_documents, showroom_staff, quotes, memberships, groups, users, showrooms, models, brands, cities RESTART IDENTITY CASCADE`,
+  );
 }
 
 export async function isSeeded() {
@@ -295,6 +297,9 @@ export async function seed() {
       joinedAt: new Date(now - 3 * DAY),
     });
   }
+
+  const { seedPortal } = await import("./seed-portal");
+  await seedPortal();
 
   return {
     cities: cityRows.length,

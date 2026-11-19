@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Star } from "lucide-react";
-import { getGroup } from "@/lib/queries";
+import { getGroup, myReferral } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 import { STAGE_LABEL, STATUS_LABEL, STATUS_STEPS } from "@/lib/constants";
-import { deadlineText, nextMonths, priceRange, publicName, referralCode, shortDate } from "@/lib/format";
+import { deadlineText, nextMonths, priceRange, publicName, shortDate } from "@/lib/format";
 import { Seats } from "@/components/seats";
 import { CarGlyph } from "@/components/car-glyph";
-import { JoinForm, LeaveForm, SignInToJoin } from "@/components/join-panel";
+import { ChoicesForm, JoinForm, LeaveForm, SignInToJoin } from "@/components/join-panel";
+import { ReferralCard } from "@/components/referral-card";
 import { ShareGroup } from "@/components/copy-link";
 import { QuoteCompare } from "@/components/quote-compare";
 import { Reveal } from "@/components/motion";
@@ -37,6 +38,8 @@ export default async function GroupPage({
   const stepIndex = STATUS_STEPS.findIndex((s) => s.key === g.status);
   const showQuotes = g.quoteRows.length > 0 && (g.status === "offers" || g.status === "completed");
   const myQuote = me?.acceptedQuoteId ? g.quoteRows.find((q) => q.id === me.acceptedQuoteId) : undefined;
+  const referral = me && myQuote ? await myReferral(me.id, myQuote.id) : null;
+  const canEditChoices = !!me && ["forming", "ready", "negotiating"].includes(g.status);
   const left = Math.max(0, g.targetSize - g.members);
   const spec = [g.variant && `${g.variant} variant`, g.fuel !== "Any" && g.fuel, g.transmission !== "Any" && g.transmission].filter(Boolean);
 
@@ -95,28 +98,8 @@ export default async function GroupPage({
             </ol>
           )}
 
-          {myQuote && me && (
-            <section className="mt-14 rounded-(--radius-card) border border-mint/40 bg-mint/[0.06] p-6 sm:p-8">
-              <h2 className="text-3xl leading-tight">You picked {myQuote.showroom}</h2>
-              <p className="mt-3 max-w-xl leading-relaxed text-dim">
-                Give this reference when you visit or call, so the showroom applies the group quote. Picking
-                an offer is not a booking. You pay the showroom directly, only if you decide to buy.
-              </p>
-              <div className="mt-6 flex flex-wrap items-end gap-x-10 gap-y-4">
-                <div>
-                  <p className="text-xs text-faint">Your reference</p>
-                  <p className="tnum font-display text-3xl tracking-[-0.02em] text-mint">{referralCode(g.id, me.id)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-faint">Showroom</p>
-                  <p>{myQuote.showroomLocality}, {g.city}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-faint">Phone (sample)</p>
-                  <p className="tnum">{myQuote.showroomPhone}</p>
-                </div>
-              </div>
-            </section>
+          {myQuote && me && referral && (
+            <ReferralCard referral={referral} showroom={myQuote.showroom} locality={myQuote.showroomLocality} city={g.city} phone={myQuote.showroomPhone} groupId={g.id} />
           )}
 
           {showQuotes && (
@@ -128,7 +111,7 @@ export default async function GroupPage({
                   {!me && " Only members can pick an offer."}
                 </p>
                 <div className="mt-8">
-                  <QuoteCompare group={g} myAcceptedId={me?.acceptedQuoteId ?? null} canAct={!!me && g.status === "offers" && ["interested", "verified", "accepted"].includes(me.stage)} />
+                  <QuoteCompare group={g} me={me} canAct={!!me && g.status === "offers" && ["interested", "verified", "accepted"].includes(me.stage)} />
                 </div>
               </section>
             </Reveal>
@@ -204,10 +187,20 @@ export default async function GroupPage({
                       <ShareGroup path={`/groups/${g.id}`} text={`Join our ${g.brand} ${g.model} buying group in ${g.city}:`} />
                     </>
                   )}
+                  {canEditChoices && me && (
+                    <details className="border-t border-line pt-4">
+                      <summary className="cursor-pointer text-sm font-medium">
+                        Your choices: {[me.variant || "any variant", me.colour || "any colour", me.transmission].filter(Boolean).join(", ")}
+                      </summary>
+                      <div className="mt-4">
+                        <ChoicesForm groupId={g.id} months={nextMonths()} variants={g.variantList} colours={g.colourList} value={me} purchaseMonth={me.purchaseMonth} />
+                      </div>
+                    </details>
+                  )}
                   {(open || g.status === "negotiating") && <LeaveForm groupId={g.id} />}
                 </div>
               ) : open ? (
-                user ? <JoinForm groupId={g.id} months={nextMonths()} /> : <SignInToJoin groupId={g.id} />
+                user ? <JoinForm groupId={g.id} months={nextMonths()} variants={g.variantList} colours={g.colourList} /> : <SignInToJoin groupId={g.id} />
               ) : (
                 <p className="text-sm leading-relaxed text-dim">
                   This group is no longer taking new members.{" "}

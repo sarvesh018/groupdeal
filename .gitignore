@@ -42,4 +42,5 @@ next-env.d.ts
 
 # local database and secrets
 /.data
+/backups
 .env*.local

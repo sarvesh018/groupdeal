@@ -9,11 +9,12 @@ import { SubmitButton } from "./submit-button";
 import { FormError } from "./form-message";
 import { Seats } from "./seats";
 import { CarGlyph } from "./car-glyph";
+import { ChoiceFields } from "./choice-fields";
 
 type Brand = {
   id: number;
   name: string;
-  models: { id: number; name: string; bodyType: string; fuels: string; priceMin: number; priceMax: number }[];
+  models: { id: number; name: string; bodyType: string; fuels: string; priceMin: number; priceMax: number; variants: string; colours: string }[];
 };
 
 export function CreateGroupForm({
@@ -35,6 +36,8 @@ export function CreateGroupForm({
   const [cityId, setCityId] = useState(defaultCityId);
   const [target, setTarget] = useState(10);
   const fuels = model.fuels.split(",");
+  const variants = model.variants.split(",").map((v) => v.trim()).filter(Boolean);
+  const colours = model.colours.split(",").map((v) => v.trim()).filter(Boolean);
   const cityName = cities.find((c) => c.id === cityId)?.name;
 
   return (
@@ -73,8 +76,12 @@ export function CreateGroupForm({
             <p className="mt-1.5 text-xs text-faint">One group covers the whole city, so nearby areas don&apos;t split the numbers.</p>
           </div>
           <div>
-            <label className="label" htmlFor="variant">Variant <span className="text-faint">(optional)</span></label>
-            <input id="variant" name="variant" maxLength={60} placeholder="Any, or name one" className="field" />
+            <label className="label" htmlFor="groupVariant">Group focus</label>
+            <select id="groupVariant" name="groupVariant" key={model.id} className="field" defaultValue="">
+              <option value="">All variants</option>
+              {variants.map((v) => <option key={v}>{v}</option>)}
+            </select>
+            <p className="mt-1.5 text-xs text-faint">Members still pick their own variant and colour.</p>
           </div>
         </div>
 
@@ -127,6 +134,10 @@ export function CreateGroupForm({
               <option>Not sure yet</option>
             </select>
           </div>
+        </div>
+
+        <div className="border-t border-line pt-5" key={`choices-${model.id}`}>
+          <ChoiceFields variants={variants} colours={colours} idPrefix="new" />
         </div>
 
         <div>

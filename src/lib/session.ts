@@ -87,3 +87,44 @@ export async function requireAdmin() {
   if (u.role !== "admin") redirect("/dashboard");
   return u;
 }
+
+export type ShowroomContext = {
+  user: CurrentUser;
+  staffRole: string;
+  showroom: typeof schema.showrooms.$inferSelect & { brand: string; city: string };
+};
+
+/** The showroom the signed-in staff member works for, or null. */
+export const getShowroomContext = cache(async (): Promise<ShowroomContext | null> => {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "showroom") return null;
+  const db = await getDb();
+  const [row] = await db
+    .select({ staffRole: schema.showroomStaff.role, showroom: schema.showrooms, brand: schema.brands.name, city: schema.cities.name })
+    .from(schema.showroomStaff)
+    .innerJoin(schema.showrooms, eq(schema.showroomStaff.showroomId, schema.showrooms.id))
+    .innerJoin(schema.brands, eq(schema.showrooms.brandId, schema.brands.id))
+    .innerJoin(schema.cities, eq(schema.showrooms.cityId, schema.cities.id))
+    .where(eq(schema.showroomStaff.userId, user.id));
+  if (!row) return null;
+  return { user, staffRole: row.staffRole, showroom: { ...row.showroom, brand: row.brand, city: row.city } };
+});
+
+/**
+ * Showroom pages and actions. `approved` (default) also requires an admin to have
+ * verified the showroom; `owner` limits to the account owner.
+ */
+export async function requireShowroom(opts: { approved?: boolean; owner?: boolean; next?: string } = {}) {
+  const user = await requireUser(opts.next ?? "/showroom");
+  if (user.role !== "showroom") redirect(user.role === "admin" ? "/admin" : "/dashboard");
+  const ctx = await getShowroomContext();
+  if (!ctx) redirect("/login");
+  if ((opts.approved ?? true) && ctx.showroom.status !== "approved") redirect("/showroom");
+  if (opts.owner && ctx.staffRole !== "owner") redirect("/showroom");
+  return ctx;
+}
+
+/** Where to send someone after they sign in. */
+export function homeFor(role: string) {
+  return role === "admin" ? "/admin" : role === "showroom" ? "/showroom" : "/dashboard";
+}

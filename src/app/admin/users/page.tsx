@@ -39,6 +39,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <td>
                   {u.id === me.id ? (
                     <span className="text-sm text-dim">Admin (you)</span>
+                  ) : u.role === "showroom" ? (
+                    <span className="text-sm text-dim">Showroom staff</span>
                   ) : (
                     <ActionSelect
                       action={setUserRole}

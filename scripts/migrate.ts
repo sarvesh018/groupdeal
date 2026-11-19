@@ -10,7 +10,7 @@ export async function runMigrations() {
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
     const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-    const client = postgres(url, { ssl: local ? false : "require", prepare: false, max: 1 });
+    const client = postgres(url, { ssl: local ? false : "require", prepare: false, max: 1, onnotice: () => {} });
     await migrate(drizzle(client), { migrationsFolder });
     await client.end();
     console.log("Tables are up to date (PostgreSQL).");

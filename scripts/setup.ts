@@ -17,6 +17,8 @@ async function main() {
   console.log("\nSign in with:");
   console.log("  Admin  admin@groupdeal.demo / admin1234");
   console.log("  Buyer  buyer@groupdeal.demo / demo1234");
+  console.log("  Showroom owner  showroom@groupdeal.demo / demo1234");
+  console.log("  Sales executive sales@groupdeal.demo / demo1234");
   process.exit(0);
 }
 

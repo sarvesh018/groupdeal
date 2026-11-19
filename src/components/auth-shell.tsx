@@ -6,11 +6,13 @@ export function AuthShell({
   lead,
   children,
   filled = 7,
+  seatNote = "Seven are in. The glowing seat is yours.",
 }: {
   title: string;
   lead: string;
   children: React.ReactNode;
   filled?: number;
+  seatNote?: string;
 }) {
   return (
     <div className="shell grid gap-12 pt-12 lg:min-h-[calc(100svh-4.5rem)] lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-20 lg:pt-0">
@@ -19,7 +21,7 @@ export function AuthShell({
         <p className="mt-6 max-w-md text-lg leading-relaxed text-dim">{lead}</p>
         <div className="mt-12 hidden lg:block">
           <Seats filled={filled} total={10} size="lg" animate />
-          <p className="mt-4 text-sm text-faint">Seven are in. The glowing seat is yours.</p>
+          <p className="mt-4 text-sm text-faint">{seatNote}</p>
         </div>
       </div>
       <div className="flex flex-col justify-center lg:py-16">{children}</div>

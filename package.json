@@ -9,7 +9,11 @@
     "lint": "eslint",
     "db:setup": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
     "db:reset": "tsx --env-file-if-exists=.env.local scripts/setup.ts --reset",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "db:backup": "tsx --env-file-if-exists=.env.local scripts/backup.ts",
+    "db:demo-showrooms": "tsx --env-file-if-exists=.env.local scripts/demo-showrooms.ts",
+    "db:rename-demo": "tsx --env-file-if-exists=.env.local scripts/rename-demo.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

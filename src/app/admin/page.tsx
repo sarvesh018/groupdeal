@@ -4,7 +4,8 @@ import { adminDashboard } from "@/lib/dashboard";
 import { requireAdmin } from "@/lib/session";
 import { BODY_LABEL, GROUP_STATUSES, MEMBER_STAGES, STATUS_LABEL } from "@/lib/constants";
 import { ChartCard, Columns, Donut, HBars, Heatmap, Lines, Meter, Stacked, type Series, type Slice } from "@/components/dashboard-charts";
-import { fmt } from "@/lib/format";
+import { fmt, rupees } from "@/lib/format";
+import { partnerKpis } from "@/lib/admin-queries";
 
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
@@ -50,7 +51,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const { city: citySlug } = await searchParams;
   const cities = await listCities();
   const city = cities.find((c) => c.slug === citySlug);
-  const d = await adminDashboard(city?.id);
+  const [d, p] = await Promise.all([adminDashboard(city?.id), partnerKpis()]);
   const t = d.totals;
   const where = city ? city.name : "all cities";
 
@@ -122,6 +123,22 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         <Kpi label="Quotes received" value={fmt(t.quotes)} />
         <Kpi label="Average fill of open groups" value={`${Math.round(t.avgFill * 100)}%`} />
         <Kpi label="Seats per user" value={t.users ? (t.seats / t.users).toFixed(1) : "0"} />
+      </div>
+
+      {/* ------------------------------------------------- showroom partners, all cities */}
+      <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+        <Link href="/admin/showrooms?status=pending" className="group">
+          <Kpi label="Showrooms to verify" value={fmt(p.pending)} note={`${p.approved} verified, all cities`} />
+        </Link>
+        <Link href="/admin/referrals" className="group">
+          <Kpi label="Buyers with showrooms" value={fmt(p.open)} note={`${p.unacknowledged} not yet acknowledged`} />
+        </Link>
+        <Link href="/admin/referrals" className="group">
+          <Kpi label="Referral bookings" value={fmt(p.booked)} note={`${p.total ? Math.round((p.booked / p.total) * 100) : 0}% of ${p.total} referrals. ${p.disputes} to check`} />
+        </Link>
+        <Link href="/admin/billing" className="group">
+          <Kpi label="Fees earned" value={rupees(p.earned)} note={`${rupees(p.paid)} paid so far, before GST`} />
+        </Link>
       </div>
 
       {/* -------------------------------------------------------------- people */}

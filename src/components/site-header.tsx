@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { LogOut, Menu, X } from "lucide-react";
+import { Bell, LogOut, Menu, X } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { logout } from "@/app/actions/auth";
 
@@ -24,7 +24,7 @@ export function Logo({ onClick }: { onClick?: () => void }) {
 
 type User = { name: string; role: string } | null;
 
-export function SiteHeader({ user }: { user: User }) {
+export function SiteHeader({ user, unread = 0 }: { user: User; unread?: number }) {
   const path = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -43,9 +43,10 @@ export function SiteHeader({ user }: { user: User }) {
     };
   }, [open]);
 
+  const showroom = user?.role === "showroom";
   const links = [
-    { href: "/groups", label: "Find a group" },
-    ...(user ? [{ href: "/dashboard", label: "My groups" }] : []),
+    ...(showroom ? [{ href: "/showroom", label: "Showroom" }] : [{ href: "/groups", label: "Find a group" }]),
+    ...(user && !showroom ? [{ href: "/dashboard", label: "My groups" }] : []),
     ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
   ];
   const isOn = (href: string) => path === href || path.startsWith(`${href}/`);
@@ -79,6 +80,12 @@ export function SiteHeader({ user }: { user: User }) {
           <div className="ml-auto hidden items-center gap-3 md:flex">
             {user ? (
               <>
+                <Link href="/notifications" className="relative grid size-9 place-items-center rounded-full text-dim transition-colors hover:text-text" aria-label={unread ? `Updates, ${unread} unread` : "Updates"} title="Updates">
+                  <Bell className="size-4" aria-hidden />
+                  {unread > 0 && (
+                    <span className="tnum absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-4 text-ink">{unread > 9 ? "9+" : unread}</span>
+                  )}
+                </Link>
                 <Link href="/profile" className="flex items-center gap-2.5 text-sm text-dim transition-colors hover:text-text">
                   <span className="grid size-8 place-items-center rounded-full border border-line-strong font-display text-[13px] text-text">
                     {user.name[0]?.toUpperCase()}
@@ -90,7 +97,7 @@ export function SiteHeader({ user }: { user: User }) {
                     <LogOut className="size-4" aria-hidden />
                   </button>
                 </form>
-                <Link href="/groups/new" className="btn btn-primary btn-sm">Start a group</Link>
+                {!showroom && <Link href="/groups/new" className="btn btn-primary btn-sm">Start a group</Link>}
               </>
             ) : (
               <>
@@ -123,7 +130,7 @@ export function SiteHeader({ user }: { user: User }) {
             transition={{ duration: 0.25 }}
           >
             <nav aria-label="Main" className="flex flex-col">
-              {[...links, ...(user ? [{ href: "/groups/new", label: "Start a group" }, { href: "/profile", label: "Profile" }] : [])].map((l, i) => (
+              {[...links, ...(user ? [...(showroom ? [] : [{ href: "/groups/new", label: "Start a group" }]), { href: "/notifications", label: unread ? `Updates (${unread})` : "Updates" }, { href: "/profile", label: "Profile" }] : [])].map((l, i) => (
                 <motion.div
                   key={l.href}
                   initial={{ opacity: 0, y: 18 }}

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb, schema } from "@/db";
-import { createSession, destroySession } from "@/lib/session";
+import { createSession, destroySession, homeFor } from "@/lib/session";
 
 export type FormState = { error?: string; fields?: Record<string, string> } | null;
 
@@ -81,7 +81,7 @@ export async function login(_prev: FormState, fd: FormData): Promise<FormState> 
 
   await createSession(user.id);
   const next = fd.get("next");
-  redirect(next ? safeNext(next) : user.role === "admin" ? "/admin" : "/dashboard");
+  redirect(next ? safeNext(next) : homeFor(user.role));
 }
 
 export async function logout() {

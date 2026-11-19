@@ -214,3 +214,21 @@ input[type="range"] {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Printing an invoice: drop the site chrome and the dark theme. */
+@media print {
+  body > header,
+  body > footer,
+  body > div[aria-hidden],
+  .print-hide {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    padding-top: 0 !important;
+  }
+}

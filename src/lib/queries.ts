@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 
-const { cities, brands, models, showrooms, users, groups, memberships, quotes } = schema;
+const { cities, brands, models, showrooms, users, groups, memberships, quotes, quoteLines, quoteColours, referrals, disputes, bookingProofs } = schema;
 
 export async function listCities() {
   const db = await getDb();
@@ -88,8 +88,9 @@ export async function getGroup(id: number) {
   if (!card) return null;
   const db = await getDb();
   const [extra] = await db
-    .select({ description: groups.description, creatorId: groups.creatorId, modelId: groups.modelId })
+    .select({ description: groups.description, creatorId: groups.creatorId, modelId: groups.modelId, variants: models.variants, colours: models.colours })
     .from(groups)
+    .innerJoin(models, eq(groups.modelId, models.id))
     .where(eq(groups.id, id));
   const memberRows = await db
     .select({
@@ -100,6 +101,12 @@ export async function getGroup(id: number) {
       note: memberships.note,
       acceptedQuoteId: memberships.acceptedQuoteId,
       joinedAt: memberships.joinedAt,
+      variant: memberships.variant,
+      colour: memberships.colour,
+      altColours: memberships.altColours,
+      transmission: memberships.transmission,
+      features: memberships.features,
+      flexibleTrim: memberships.flexibleTrim,
       name: users.name,
       email: users.email,
       phone: users.phone,
@@ -122,6 +129,8 @@ export async function getGroup(id: number) {
       onRoad: quotes.onRoad,
       deliveryWeeks: quotes.deliveryWeeks,
       validUntil: quotes.validUntil,
+      status: quotes.status,
+      note: quotes.note,
       showroomId: showrooms.id,
       showroom: showrooms.name,
       showroomLocality: showrooms.locality,
@@ -130,14 +139,30 @@ export async function getGroup(id: number) {
     })
     .from(quotes)
     .innerJoin(showrooms, eq(quotes.showroomId, showrooms.id))
-    .where(eq(quotes.groupId, id))
+    .where(and(eq(quotes.groupId, id), eq(quotes.status, "submitted")))
     .orderBy(asc(quotes.onRoad));
+  const qIds = quoteRows.map((q) => q.id);
+  const lines = qIds.length ? await db.select().from(quoteLines).where(inArray(quoteLines.quoteId, qIds)) : [];
+  const colourRows = qIds.length ? await db.select().from(quoteColours).where(inArray(quoteColours.quoteId, qIds)) : [];
+  const quotesWithCards = quoteRows.map((q) => ({
+    ...q,
+    lines: lines.filter((l) => l.quoteId === q.id),
+    colours: colourRows.filter((c) => c.quoteId === q.id),
+  }));
   const localShowrooms = await db
     .select()
     .from(showrooms)
     .where(and(eq(showrooms.cityId, card.cityId), eq(showrooms.brandId, card.brandId)))
     .orderBy(desc(showrooms.rating));
-  return { ...card, ...extra, memberRows, quoteRows, localShowrooms };
+  return {
+    ...card,
+    ...extra,
+    variantList: extra.variants.split(",").map((x) => x.trim()).filter(Boolean),
+    colourList: extra.colours.split(",").map((x) => x.trim()).filter(Boolean),
+    memberRows,
+    quoteRows: quotesWithCards,
+    localShowrooms: localShowrooms.filter((s) => s.status === "approved"),
+  };
 }
 
 export type GroupDetail = NonNullable<Awaited<ReturnType<typeof getGroup>>>;
@@ -193,13 +218,30 @@ export async function adminShowrooms() {
       locality: showrooms.locality,
       phone: showrooms.phone,
       rating: showrooms.rating,
+      status: showrooms.status,
       brand: brands.name,
       city: cities.name,
       cityId: cities.id,
-      quotes: sql<number>`(select count(*)::int from quotes q where q.showroom_id = ${showrooms.id})`,
+      quotes: sql<number>`(select count(*)::int from quotes q where q.showroom_id = ${showrooms.id} and q.status = 'submitted')`,
+      referrals: sql<number>`(select count(*)::int from referrals r where r.showroom_id = ${showrooms.id})`,
+      bookings: sql<number>`(select count(*)::int from referrals r where r.showroom_id = ${showrooms.id} and r.status in ('booked','delivered'))`,
+      staff: sql<number>`(select count(*)::int from showroom_staff s where s.showroom_id = ${showrooms.id})`,
     })
     .from(showrooms)
     .innerJoin(brands, eq(showrooms.brandId, brands.id))
     .innerJoin(cities, eq(showrooms.cityId, cities.id))
     .orderBy(asc(cities.id), asc(brands.name), asc(showrooms.name));
+}
+
+/** The member's referral to the showroom they picked, with any dispute and receipts. */
+export async function myReferral(membershipId: number, quoteId: number | null) {
+  if (!quoteId) return null;
+  const db = await getDb();
+  const [q] = await db.select({ showroomId: quotes.showroomId }).from(quotes).where(eq(quotes.id, quoteId));
+  if (!q) return null;
+  const [r] = await db.select().from(referrals).where(and(eq(referrals.membershipId, membershipId), eq(referrals.showroomId, q.showroomId)));
+  if (!r) return null;
+  const [dispute] = await db.select().from(disputes).where(eq(disputes.referralId, r.id)).orderBy(desc(disputes.id)).limit(1);
+  const proofs = await db.select({ id: bookingProofs.id, fileName: bookingProofs.fileName }).from(bookingProofs).where(eq(bookingProofs.referralId, r.id));
+  return { ...r, dispute: dispute ?? null, proofs };
 }
