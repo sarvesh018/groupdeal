@@ -20,6 +20,7 @@ const r1000 = (n: number) => Math.round(n / 1000) * 1000;
 
 export const DEMO_SHOWROOM_EMAIL = "showroom@groupdeal.demo";
 export const DEMO_SALES_EMAIL = "sales@groupdeal.demo";
+export const DEMO_RIVAL_EMAIL = "rival@groupdeal.demo";
 export const DEFAULT_BANDS = [
   { minPrice: 0, maxPrice: 1000000, fee: 2500 },
   { minPrice: 1000000, maxPrice: 2000000, fee: 4000 },
@@ -34,7 +35,7 @@ export async function seedPortal() {
   if ((await db.select({ id: feeBands.id }).from(feeBands).limit(1)).length === 0) await db.insert(feeBands).values(DEFAULT_BANDS);
   const bands = await db.select().from(feeBands);
 
-  await db.update(showrooms).set({ status: "approved", verifiedAt: new Date(now - 45 * DAY), createdAt: new Date(now - 60 * DAY), gstNumber: sql`'27' || 'AAACG' || lpad(${showrooms.id}::text, 4, '0') || 'K1Z' || chr(65 + (${showrooms.id} % 26))` });
+  await db.update(showrooms).set({ status: "approved", verifiedAt: new Date(now - 45 * DAY), createdAt: new Date(now - 60 * DAY) });
 
   // What each member wants within the group's car.
   const modelRows = await db.select().from(models);
@@ -68,11 +69,12 @@ export async function seedPortal() {
     const g = groupRows.find((x) => x.id === q.groupId)!;
     const model = modelRows.find((x) => x.id === g.modelId)!;
     const variants = splitList(model.variants);
+    // Prices spread across the model's range, lowest variant first, with this showroom's discounts.
     const lines = variants.map((variant, i) => {
-      const f = 1 + (i - (variants.length - 1) / 2) * 0.13;
-      const ex = r1000(q.exShowroom * f);
-      const insurance = r100(q.insurance * f);
-      const rto = r100(q.rto * f);
+      const t = variants.length < 2 ? 0.5 : i / (variants.length - 1);
+      const ex = r1000(model.priceMin + (model.priceMax - model.priceMin) * t);
+      const insurance = r100(ex * (0.03 + rnd() * 0.012));
+      const rto = r100(ex * 0.11);
       const onRoad = ex - q.makerOffer - q.dealerDiscount + insurance + rto + q.accessories + q.otherCharges;
       return { quoteId: q.id, variant, exShowroom: ex, makerOffer: q.makerOffer, dealerDiscount: q.dealerDiscount, insurance, rto, accessories: q.accessories, otherCharges: q.otherCharges, onRoad };
     });
@@ -206,7 +208,13 @@ export async function seedPortal() {
 export async function ensureDemoShowroomUsers(opts: { createGroupIfNeeded?: boolean } = {}) {
   const db = await getDb();
   const [have] = await db.select({ id: users.id }).from(users).where(eq(users.email, DEMO_SHOWROOM_EMAIL));
-  if (have) return { added: false };
+  if (have) {
+    // Owner and executive exist already (added by an earlier version): only add the competing showroom's login.
+    const [mine] = await db.select({ showroomId: showroomStaff.showroomId }).from(showroomStaff).where(eq(showroomStaff.userId, have.id));
+    const [room] = mine ? await db.select().from(showrooms).where(eq(showrooms.id, mine.showroomId)) : [];
+    const rival = room ? await ensureRival(room, await bcrypt.hash("demo1234", 10)) : undefined;
+    return { added: false, rival };
+  }
   const now = Date.now();
 
   const rooms = await db.select().from(showrooms).where(eq(showrooms.status, "approved")).orderBy(asc(showrooms.id));
@@ -259,6 +267,8 @@ export async function ensureDemoShowroomUsers(opts: { createGroupIfNeeded?: bool
     { showroomId: room.id, userId: sales.id, role: "executive" },
   ]);
 
+  const rival = await ensureRival(room, hash);
+
   // Give the executive the buyers already in progress, and leave one new buyer to acknowledge.
   const refs = await db.select().from(referrals).where(eq(referrals.showroomId, room.id)).orderBy(asc(referrals.id));
   const active = refs.filter((r) => ["acknowledged", "contacted", "test_drive"].includes(r.status));
@@ -283,5 +293,25 @@ export async function ensureDemoShowroomUsers(opts: { createGroupIfNeeded?: bool
       { userId: owner.id, title: "Quote request from a group", body: "Send your best price before the deadline.", href: "/showroom/invitations", createdAt: new Date(now - DAY) },
     ]);
   }
-  return { added: true, showroom: room.name };
+  return { added: true, showroom: room.name, rival };
+}
+
+/** A competing showroom of the same brand in the same city gets a login, so two quotes can be compared. */
+async function ensureRival(room: typeof showrooms.$inferSelect, hash: string) {
+  const db = await getDb();
+  const [haveRival] = await db.select({ id: users.id }).from(users).where(eq(users.email, DEMO_RIVAL_EMAIL));
+  if (haveRival) return undefined;
+  const staffed = (await db.select({ id: showroomStaff.showroomId }).from(showroomStaff)).map((r) => r.id);
+  const [rivalRoom] = await db
+    .select()
+    .from(showrooms)
+    .where(and(eq(showrooms.brandId, room.brandId), eq(showrooms.cityId, room.cityId), eq(showrooms.status, "approved"), sql`${showrooms.id} <> ${room.id}`))
+    .orderBy(asc(showrooms.id));
+  if (!rivalRoom || staffed.includes(rivalRoom.id)) return undefined;
+  const [r] = await db
+    .insert(users)
+    .values({ name: "Imran Sayyed", email: DEMO_RIVAL_EMAIL, phone: "9000000006", passwordHash: hash, role: "showroom", cityId: rivalRoom.cityId, locality: rivalRoom.locality })
+    .returning();
+  await db.insert(showroomStaff).values({ showroomId: rivalRoom.id, userId: r.id, role: "owner" });
+  return rivalRoom.name;
 }

@@ -26,7 +26,10 @@ Open http://localhost:3000 and sign in:
 | Buyer           | buyer@groupdeal.demo     | demo1234  |
 | Showroom owner  | showroom@groupdeal.demo  | demo1234  |
 | Sales executive | sales@groupdeal.demo     | demo1234  |
+| Competing showroom (same brand, same city) | rival@groupdeal.demo | demo1234 |
 | Showroom waiting to be verified | pending@groupdeal.demo | demo1234 |
+
+**For a guided walk-through of the whole journey (buyer, two competing showrooms, admin), follow [DEMO.md](DEMO.md).** It takes about 15 minutes.
 
 Every sample buyer (for example `aarav.kulkarni0@example.com`) also uses `demo1234`. You can register new accounts too.
 
@@ -89,7 +92,9 @@ Without a `DATABASE_URL`, the app keeps its data in a small built-in PostgreSQL 
 
 **Dummy data loaded by `npm run db:setup`**
 
-6 cities (Pune, Bengaluru, Indore, Mumbai, Hyderabad, Ahmedabad), 8 brands, 32 car models with indicative prices, 96 invented showrooms (all verified) plus one waiting for verification, 125 users and 43 groups at different stages. Groups with offers have rate cards per variant and colour; members who picked an offer have referrals at various stages, with fees, last month's invoices and one booking for a showroom to confirm. The demo showroom (a Pune Maruti Suzuki dealer) has a group waiting for its quote.
+6 cities (Pune, Bengaluru, Indore, Mumbai, Hyderabad, Ahmedabad), 8 brands, 32 car models with indicative prices and their real variant and colour names (as commonly sold in India; check before relying on them), 96 invented showrooms (all verified) plus one waiting for verification, 125 users and 43 groups at different stages. Groups with offers have rate cards per variant and colour; members who picked an offer have referrals at various stages, with fees, last month's invoices and one booking for a showroom to confirm. The demo showroom and its competitor (both Pune Maruti Suzuki dealers) have a Swift group waiting for their quotes, and the demo buyer is in it. Showrooms have invented names, addresses, GST numbers and dealer codes.
+
+**Car photos:** 23 of the 32 models show a photo from [Wikimedia Commons](https://commons.wikimedia.org), freely licensed and credited on each picture with a link to its page (author and licence). They're loaded straight from Commons, so they need an internet connection; if a photo can't load, or a model has no free photo (Curvv, Harrier, Thar, Scorpio N, Carens, Glanza, Amaze, Astor, Windsor EV), a drawn outline is shown. The list lives in `src/lib/catalogue-data.ts`. For a real launch, use the carmakers' official images with permission, or your own photos.
 
 ---
 
@@ -166,8 +171,9 @@ Your live database keeps all its users, groups and quotes. This version only **a
 2. `npm install`
 3. `npm run db:backup` saves every table to `backups/backup-<time>.json`. Keep that file somewhere safe. (Supabase's free plan has no automatic backups.)
 4. `npm run db:migrate` adds the new tables and fills them in. Running it twice is safe; it only applies what's new.
+   It also applies `0002_car_details`, which swaps the placeholder variants (Base, Mid, Top) for each model's real variant and colour names. Members who already chose "Base/Mid/Top" keep that text; offers then show them the closest price line.
 5. `npm run db:rename-demo` changes the old `@toli.demo` demo emails to `@groupdeal.demo`. Optional.
-6. `npm run db:demo-showrooms` adds the two demo showroom logins to a showroom with buyers. Optional; skip it if you don't want demo logins on the live site.
+6. `npm run db:demo-showrooms` adds the demo showroom logins (owner, sales executive, and a competing showroom of the same brand). If you ran it before, it only adds the competing showroom. Optional; skip it if you don't want demo logins on the live site.
 7. `npm run dev` and check: sign in as admin, open Admin → Showrooms and Referrals; sign in as the showroom owner.
 8. Push to GitHub. Vercel deploys automatically. Add the `BUSINESS_*` variables in Vercel first (Settings → Environment Variables), then redeploy.
 
@@ -190,7 +196,7 @@ This version is for demos and testing with friendly users and showrooms. These a
 - **Online payment of invoices.** Invoices are printable; you record payment by hand (Mark paid). Confirm the invoice format, SAC code (998599 is used) and GST treatment with your accountant.
 - **File storage.** Uploaded documents and receipts are kept in the database (2 MB each). For more than a few hundred, move them to Supabase Storage.
 - **Legal pages.** Terms for buyers, the showroom partner agreement (fees, the 90-day referral window, disputes), privacy policy and consent wording, reviewed by a lawyer.
-- **Car photos.** Line drawings stand in for photos, which need a licence.
+- **Official car photos.** The demo uses freely licensed Wikimedia Commons photos for 23 models. For a real launch, get permission to use the carmakers' images or take your own.
 
 ---
 
@@ -207,6 +213,7 @@ This version is for demos and testing with friendly users and showrooms. These a
 | `src/lib/queries.ts`       | Reads data for buyer pages and admin tables                          |
 | `src/lib/showroom-queries.ts`, `src/lib/admin-queries.ts` | Reads data for the showroom portal and new admin pages |
 | `src/lib/portal.ts`        | Referrals, bookings, fees and notifications: the rules that change several tables at once |
+| `src/lib/catalogue-data.ts` | Variant and colour names and the credited photo for each car model |
 | `src/lib/rules.ts`         | Plain business rules: fee bands, GST, which price line applies to a buyer, referral codes |
 | `src/lib/dashboard.ts`     | Every number on the admin dashboard                                  |
 | `src/components/dashboard-charts.tsx` | The chart components: bars, columns, pie, stacked, line, heat map |
@@ -220,7 +227,8 @@ This version is for demos and testing with friendly users and showrooms. These a
 **Common changes**
 
 - *Add a city:* add it to `CITIES` in `scripts/seed.ts` and its areas to `CITY_LOCALITIES` in `src/lib/constants.ts`, then `npm run db:reset` (local only).
-- *Add a car or brand:* add it to `CATALOGUE` in `scripts/seed.ts`, then `npm run db:reset`.
+- *Add a car or brand:* add it to `CATALOGUE` in `scripts/seed.ts` and its variants, colours and photo to `src/lib/catalogue-data.ts`, then `npm run db:reset` (local only).
+- *Change a car photo:* edit its `photo` in `src/lib/catalogue-data.ts` (the exact Commons file name, author and licence).
 - *Change chart colours:* edit `--series-*` and `--seq-*` in `src/app/globals.css`. The current ones were checked for colour-blind readability on the dark background.
 - *Change colours:* edit the `--color-*` values at the top of `src/app/globals.css`. To change the accent, also update `ACCENT` in `src/components/seat-ring-scene.tsx`.
 - *Change a table:* edit `src/db/schema.ts`, run `npm run db:generate`, check the new file in `drizzle/` only adds things, then `npm run db:backup` and `npm run db:migrate`. Never edit a migration that has already run on the live database.

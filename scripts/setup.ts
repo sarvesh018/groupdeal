@@ -19,6 +19,7 @@ async function main() {
   console.log("  Buyer  buyer@groupdeal.demo / demo1234");
   console.log("  Showroom owner  showroom@groupdeal.demo / demo1234");
   console.log("  Sales executive sales@groupdeal.demo / demo1234");
+  console.log("  Competing showroom rival@groupdeal.demo / demo1234");
   process.exit(0);
 }
 

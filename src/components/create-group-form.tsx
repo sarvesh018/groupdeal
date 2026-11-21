@@ -8,7 +8,7 @@ import { priceRange } from "@/lib/format";
 import { SubmitButton } from "./submit-button";
 import { FormError } from "./form-message";
 import { Seats } from "./seats";
-import { CarGlyph } from "./car-glyph";
+import { CarPhoto } from "./car-photo";
 import { ChoiceFields } from "./choice-fields";
 
 type Brand = {
@@ -157,16 +157,18 @@ export function CreateGroupForm({
       </form>
 
       <aside aria-label="Preview">
-        <div className="card relative overflow-hidden p-6 lg:sticky lg:top-24">
-          <CarGlyph bodyType={model.bodyType} className="absolute -right-6 top-2 w-44 text-accent/40" />
+        <div className="card relative overflow-hidden lg:sticky lg:top-24">
+          <CarPhoto key={model.id} brand={brand.name} model={model.name} bodyType={model.bodyType} width={640} credit className="aspect-[16/10] w-full" />
+          <div className="p-6">
           <p className="text-sm text-dim">Your group</p>
-          <p className="mt-12 text-sm text-dim">{brand.name}</p>
+          <p className="mt-4 text-sm text-dim">{brand.name}</p>
           <p className="font-display text-3xl leading-tight">{model.name}</p>
           <p className="mt-1 text-sm text-dim">{priceRange(model.priceMin, model.priceMax)}, {cityName}</p>
           <div className="mt-6">
             <Seats filled={1} total={target} size="md" />
           </div>
           <p className="mt-3 text-sm text-dim">You take the first seat. {target - 1} to fill.</p>
+          </div>
         </div>
       </aside>
     </div>

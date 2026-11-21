@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { STAGE_LABEL, STATUS_LABEL, STATUS_STEPS } from "@/lib/constants";
 import { deadlineText, nextMonths, priceRange, publicName, shortDate } from "@/lib/format";
 import { Seats } from "@/components/seats";
-import { CarGlyph } from "@/components/car-glyph";
+import { CarPhoto } from "@/components/car-photo";
 import { ChoicesForm, JoinForm, LeaveForm, SignInToJoin } from "@/components/join-panel";
 import { ReferralCard } from "@/components/referral-card";
 import { ShareGroup } from "@/components/copy-link";
@@ -55,8 +55,8 @@ export default async function GroupPage({
         </div>
       )}
 
-      <header className="relative mt-10 lg:mt-16">
-        <CarGlyph bodyType={g.bodyType} className="pointer-events-none absolute -top-10 right-0 hidden w-[26rem] text-white/[0.07] lg:block" />
+      <header className="relative mt-10 grid gap-8 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-end">
+        <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dim">
           <span className={`flex items-center gap-2 ${g.status === "forming" ? "text-accent" : g.status === "offers" ? "text-mint" : "text-text"}`}>
             <span className="size-1.5 rounded-full bg-current" aria-hidden />
@@ -65,12 +65,14 @@ export default async function GroupPage({
           <span>{g.city}</span>
           <span>{g.brand}</span>
         </p>
-        <h1 className="mt-4 text-[clamp(3.4rem,10vw,10rem)] leading-[0.9] tracking-[-0.055em]">{g.model}</h1>
+        <h1 className="mt-4 text-[clamp(3.2rem,8vw,8rem)] leading-[0.9] tracking-[-0.055em]">{g.model}</h1>
         <p className="mt-6 max-w-2xl text-lg text-dim">
           {priceRange(g.priceMin, g.priceMax)} ex-showroom (indicative)
           {spec.length > 0 && <>. Group preference: {spec.join(", ")}</>}
         </p>
         {g.description && <p className="mt-4 max-w-2xl leading-relaxed text-text/90">{g.description}</p>}
+        </div>
+        <CarPhoto brand={g.brand} model={g.model} bodyType={g.bodyType} credit priority className="aspect-[16/10] w-full rounded-(--radius-card) border border-line" />
       </header>
 
       <div className="mt-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-16">

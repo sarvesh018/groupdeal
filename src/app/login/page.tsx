@@ -35,7 +35,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <p className="mt-1.5">Buyer: buyer@groupdeal.demo / demo1234</p>
             <p>Showroom owner: showroom@groupdeal.demo / demo1234</p>
             <p>Sales executive: sales@groupdeal.demo / demo1234</p>
+            <p>Competing showroom: rival@groupdeal.demo / demo1234</p>
             <p>Admin: admin@groupdeal.demo / admin1234</p>
+            <p className="mt-2 text-faint">A step-by-step demo is in DEMO.md.</p>
           </div>
         )}
       </div>

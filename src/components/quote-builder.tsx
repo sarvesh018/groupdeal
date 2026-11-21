@@ -73,7 +73,7 @@ export function QuoteBuilder({
   deliveryWeeks: number;
   note: string;
   locked: boolean;
-  defaults: { exShowroom: number; insurance: number; rto: number };
+  defaults: { priceMin: number; priceMax: number };
 }) {
   const [state, action, pending] = useActionState<PortalState, FormData>(saveQuote, null);
   const [which, setWhich] = useState("");
@@ -81,8 +81,9 @@ export function QuoteBuilder({
   const [values, setValues] = useState(() =>
     rows.map((variant, i) => {
       const have = existing.find((l) => l.variant === variant);
-      const step = 1 + (i - (variants.length - 1) / 2) * 0.12;
-      const ex = Math.round((defaults.exShowroom * step) / 1000) * 1000;
+      // A starting price spread across the model's range, lowest variant first. The showroom edits it.
+      const t = variant === "All variants" || variants.length < 2 ? 0.5 : i / (variants.length - 1);
+      const ex = Math.round((defaults.priceMin + (defaults.priceMax - defaults.priceMin) * t) / 1000) * 1000;
       const base: Line = have ?? {
         variant,
         exShowroom: ex,

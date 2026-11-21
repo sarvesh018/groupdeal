@@ -6,6 +6,7 @@
 import bcrypt from "bcryptjs";
 import { sql } from "drizzle-orm";
 import { getDb, schema } from "../src/db";
+import { CAR_DETAILS } from "../src/lib/catalogue-data";
 import { CITY_LOCALITIES } from "../src/lib/constants";
 
 // Small seeded random generator so every setup produces the same data.
@@ -136,12 +137,18 @@ export async function seed() {
           fuels,
           priceMin: Math.round(min * L),
           priceMax: Math.round(max * L),
+          ...(() => {
+            const d = CAR_DETAILS[slugify(`${brand} ${name}`)];
+            return d ? { variants: d.variants.join(","), colours: d.colours.join(",") } : {};
+          })(),
         })),
       ),
     )
     .returning();
 
-  // Fictional showrooms: two per brand in every city.
+  // Fictional showrooms: two per brand in every city. Names, addresses and GST numbers are invented.
+  const GST_STATE: Record<string, string> = { Maharashtra: "27", Karnataka: "29", "Madhya Pradesh": "23", Telangana: "36", Gujarat: "24" };
+  const ROADS = ["Main Road", "Highway Service Road", "Ring Road", "Station Road", "Link Road"];
   const showroomValues = cityRows.flatMap((city, ci) =>
     brandRows.flatMap((brand, bi) =>
       [0, 1].map((k) => {
@@ -153,6 +160,9 @@ export async function seed() {
           locality: CITY_LOCALITIES[city.slug][(bi * 2 + k) % CITY_LOCALITIES[city.slug].length],
           phone: `1800-000-${String(1000 + ci * 100 + bi * 2 + k)}`,
           rating: Math.round((3.8 + rnd() * 1.1) * 10) / 10,
+          address: `Plot ${10 + ((ci * 37 + bi * 11 + k * 5) % 180)}, ${ROADS[(bi + k + ci) % ROADS.length]}, ${CITY_LOCALITIES[city.slug][(bi * 2 + k) % CITY_LOCALITIES[city.slug].length]}, ${city.name}`,
+          gstNumber: `${GST_STATE[CITIES[ci].state] ?? "27"}AAD${"CFGHJ"[(bi + k) % 5]}${"KLMNP"[ci % 5]}${String(1000 + ci * 160 + bi * 2 + k).slice(-4)}${"QRSTU"[bi % 5]}1Z${(bi + k + ci) % 10}`,
+          dealerCode: `${brand.name.slice(0, 2).toUpperCase()}-${CITIES[ci].slug.slice(0, 3).toUpperCase()}-${String(100 + bi * 2 + k)}`,
         };
       }),
     ),
@@ -199,7 +209,7 @@ export async function seed() {
       g++;
       const target = int(6, 12);
       const full = status !== "forming" && status !== "expired";
-      const count = full ? Math.min(cityBuyers.length, target + int(0, 2)) : status === "expired" ? int(1, 3) : int(2, target - 1);
+      const count = full ? Math.min(cityBuyers.length, target) : status === "expired" ? int(1, 3) : int(2, target - 1);
       const members = shuffle(cityBuyers).slice(0, count);
       const createdAgo = status === "forming" ? int(2, 12) : int(14, 40);
       const deadline =

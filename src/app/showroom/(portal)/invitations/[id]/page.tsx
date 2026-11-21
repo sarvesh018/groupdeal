@@ -7,6 +7,7 @@ import { respondInvitation } from "@/app/actions/showroom";
 import { deadlineText, priceRange, shortDate } from "@/lib/format";
 import { QuoteBuilder } from "@/components/quote-builder";
 import { SubmitButton } from "@/components/submit-button";
+import { CarPhoto } from "@/components/car-photo";
 
 export const metadata = { title: "Invitation" };
 
@@ -46,7 +47,8 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
         <ArrowLeft className="size-4" aria-hidden /> Invitations
       </Link>
       <header className="mt-6 flex flex-wrap items-end justify-between gap-6">
-        <div>
+        <CarPhoto brand={inv.brand} model={inv.model} bodyType={inv.bodyType} width={640} credit className="aspect-[16/10] w-full max-w-xs rounded-(--radius-card) border border-line" />
+        <div className="mr-auto">
           <p className="text-sm text-dim">Group #{inv.group.id} in {inv.city}</p>
           <h2 className="mt-2 text-5xl leading-none tracking-[-0.04em] sm:text-6xl">{inv.brand} {inv.model}</h2>
           <p className="mt-3 text-dim">{priceRange(inv.priceMin, inv.priceMax)} ex-showroom range</p>
@@ -87,7 +89,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
               deliveryWeeks={inv.quote?.deliveryWeeks ?? 2}
               note={inv.quote?.note ?? ""}
               locked={!open}
-              defaults={{ exShowroom: Math.round((inv.priceMin + inv.priceMax) / 2 / 1000) * 1000, insurance: 0, rto: 0 }}
+              defaults={{ priceMin: inv.priceMin, priceMax: inv.priceMax }}
             />
           )}
         </div>

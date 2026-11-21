@@ -15,6 +15,13 @@
       "when": 1795114209891,
       "tag": "0001_showroom_portal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795242766359,
+      "tag": "0002_car_details",
+      "breakpoints": true
     }
   ]
 }

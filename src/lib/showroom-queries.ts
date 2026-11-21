@@ -127,6 +127,7 @@ export async function getInvitation(id: number, showroomId: number) {
       colours: models.colours,
       priceMin: models.priceMin,
       priceMax: models.priceMax,
+      bodyType: models.bodyType,
       brand: brands.name,
       city: cities.name,
     })

@@ -4,6 +4,7 @@ import type { GroupCard as G } from "@/lib/queries";
 import { STATUS_LABEL } from "@/lib/constants";
 import { deadlineText, priceRange } from "@/lib/format";
 import { Seats } from "./seats";
+import { CarPhoto } from "./car-photo";
 
 /**
  * One group as a line on the board: car, city, seats, time left.
@@ -20,7 +21,9 @@ export function GroupRow({ g, joined = false, note }: { g: G; joined?: boolean; 
     >
       <span className="absolute inset-y-0 left-0 w-px origin-top scale-y-0 bg-accent transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-y-100" aria-hidden />
 
-      <span className="min-w-0 transition-transform duration-500 ease-(--ease-out-expo) group-hover:translate-x-2">
+      <span className="flex min-w-0 items-center gap-4 transition-transform duration-500 ease-(--ease-out-expo) group-hover:translate-x-2">
+        <CarPhoto brand={g.brand} model={g.model} bodyType={g.bodyType} width={330} className="hidden h-16 w-24 shrink-0 rounded-lg sm:block" />
+        <span className="min-w-0">
         <span className="block text-[13px] text-faint">
           {g.brand}
           {joined && <span className="ml-3 text-mint">You&apos;re in</span>}
@@ -28,6 +31,7 @@ export function GroupRow({ g, joined = false, note }: { g: G; joined?: boolean; 
         <span className="mt-0.5 block truncate font-display text-[1.7rem] font-medium leading-tight tracking-[-0.035em] sm:text-[2rem]">{g.model}</span>
         <span className="mt-1 block truncate text-sm text-dim">
           {priceRange(g.priceMin, g.priceMax)}{spec ? `, ${spec}` : ""}
+        </span>
         </span>
       </span>
 
